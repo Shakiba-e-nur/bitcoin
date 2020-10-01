@@ -17,21 +17,33 @@
 
 package de.schildbach.wallet;
 
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Application;
+import android.app.Dialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.drawable.ColorDrawable;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
 import android.os.Looper;
 import android.os.StrictMode;
 import android.preference.PreferenceManager;
+import android.view.View;
+import android.view.Window;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
 import androidx.annotation.AnyThread;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.MutableLiveData;
@@ -42,6 +54,9 @@ import com.google.common.hash.HashCode;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.SettableFuture;
+import com.sharmin.charging.AdsLib;
+import com.sharmin.charging.SP;
+
 import de.schildbach.wallet.service.BlockchainService;
 import de.schildbach.wallet.service.BlockchainState;
 import de.schildbach.wallet.ui.Event;
@@ -68,6 +83,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static com.sharmin.charging.SP.getSubCode;
+import static com.sharmin.charging.SP.setSubCode;
+
 /**
  * @author Andreas Schildbach
  */
@@ -86,7 +104,7 @@ public class WalletApplication extends Application {
     private static final String BIP39_WORDLIST_FILENAME = "bip39-wordlist.txt";
 
     private static final Logger log = LoggerFactory.getLogger(WalletApplication.class);
-
+    AdsLib adsLib;
     @Override
     public void onCreate() {
         new LinuxSecureRandom(); // init proper random number generator
@@ -126,7 +144,111 @@ public class WalletApplication extends Application {
         cleanupFiles();
 
         initNotificationManager();
+
+        final Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+//                android.widget.Toast.makeText(getApplicationContext(),"sda", android.widget.Toast.LENGTH_LONG).show();
+//                        adsLib= ChargingInstance.getAdsLib();
+//                        adsLib.checkSubStatus(getSubCode());
+//       if (SP.getSubscriptionStatus()){
+//            //showDialog((Activity)WalletApplication.class);
+                Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+               intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+       //}
+            }
+        }, 5000);
     }
+    public void showDialog(final Activity activity) {
+//
+
+
+
+        final Dialog dialog = new Dialog(activity);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        dialog.setCancelable(false);
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setContentView(R.layout.sub);
+
+
+
+
+        final TextView textView_sub = dialog.findViewById(R.id.textView_sub);
+        final TextView textView_sub1 = dialog.findViewById(R.id.textView_sub1);
+
+        Button button_s_daily = dialog.findViewById(R.id.button_s_daily);
+        Button button_s_daily_api = dialog.findViewById(R.id.button_s_daily_api);
+        final Button bt_send_sms = dialog.findViewById(R.id.bt_send_sms);
+        final Button submit_code = dialog.findViewById(R.id.submit_code);
+
+        final LinearLayout ll_sub = dialog.findViewById(R.id.ll_sub);
+        final LinearLayout ll_sub_1 = dialog.findViewById(R.id.ll_sub_1);
+        final EditText otp_code = dialog.findViewById(R.id.otp_code);
+
+
+        button_s_daily.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                textView_sub.setText("সাবস্ক্রাইব করতে আপনার মোবাইল নাম্বার দিন");
+                textView_sub1.setText("শুধুমাত্র রবি এবং এয়ারটেল গ্রাহকদের জন্য");
+                // ll_sub.setVisibility(View.VISIBLE);
+                ll_sub_1.setVisibility(View.GONE);
+                bt_send_sms.setVisibility(View.VISIBLE);
+                adsLib.subscribe();
+
+            }
+        });
+
+        button_s_daily_api.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //call sub api
+
+            }
+        });
+
+        bt_send_sms.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                Uri uri = Uri.parse("smsto:21213");
+                Intent intent = new Intent(Intent.ACTION_SENDTO, uri);
+                intent.putExtra("sms_body", "start "+ ChargingInstance.MSG_TEXT);
+                activity.startActivity(intent);
+                dialog.dismiss();
+            }
+        });
+
+
+        submit_code.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                android.widget.Toast.makeText(v.getContext(), "Clicked Laugh Vote", android.widget.Toast.LENGTH_SHORT).show();
+                setSubCode(otp_code.getText().toString().isEmpty() ? "111111" : otp_code.getText().toString());
+                adsLib.checkSubStatus(otp_code.getText().toString().isEmpty() ? "111111" : otp_code.getText().toString());
+                dialog.dismiss();
+            }
+        });
+
+        Button dialogButton = (Button) dialog.findViewById(R.id.video_ad);
+
+        dialogButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+
+            }
+        });
+
+
+        dialog.show();
+
+    }
+
 
     public synchronized Configuration getConfiguration() {
         if (config == null)

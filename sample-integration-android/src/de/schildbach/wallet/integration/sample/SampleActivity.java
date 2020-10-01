@@ -63,6 +63,8 @@ public class SampleActivity extends Activity {
         requestButton.setOnClickListener(v -> handleRequest());
 
         donateMessage = (TextView) findViewById(R.id.sample_donate_message);
+
+
     }
 
     private String[] donationAddresses() {
